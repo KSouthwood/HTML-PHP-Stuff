@@ -73,6 +73,16 @@ $(function() {
 function addMarker(place)
 {
     // TODO
+    // var markerLatLng = ;
+    var marker = new MarkerWithLabel({
+    	position: {lat: parseFloat(place.latitude), lng: parseFloat(place.longitude)},
+    	map: map,
+    	labelContent: place.place_name + ", " + place.admin_code1,
+    	icon: 'img/text.png',
+    	labelClass: 'label'
+    });
+    
+    markers.push(marker);
 }
 
 /**
@@ -106,7 +116,7 @@ function configure()
         source: search,
         templates: {
             empty: "no places found yet",
-            suggestion: _.template("<p>TODO</p>")
+            suggestion: _.template("<p><%- place_name %>,&nbsp;<%- admin_code1 %>&nbsp;<%- postal_code %></p>")
         }
     });
 
@@ -157,7 +167,14 @@ function hideInfo()
  */
 function removeMarkers()
 {
-    // TODO
+    // remove the markers stored in the markers array
+    for (var ii = 0; ii < markers.length; ii++)
+    {
+    	markers[ii].setMap(null);
+    }
+    
+    // set the markers array to empty
+    markers = [];
 }
 
 /**
