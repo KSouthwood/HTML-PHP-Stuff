@@ -72,8 +72,8 @@ $(function() {
  */
 function addMarker(place)
 {
-    // TODO
-    // var markerLatLng = ;
+	var contentString;
+	// create a new object
     var marker = new MarkerWithLabel({
     	position: {lat: parseFloat(place.latitude), lng: parseFloat(place.longitude)},
     	map: map,
@@ -82,6 +82,33 @@ function addMarker(place)
     	labelClass: 'label'
     });
     
+    // get postal code for marker
+    var parameters = {
+    	geo: place.postal_code
+    };
+    
+    // get articles for our marker
+    $.getJSON("articles.php", parameters)
+    .done(function(data, textStatus, jqXHR) {
+
+		contentString = "<ul>";	
+        // add new markers to map
+        for (var i = 0; i < data.length; i++)
+        {
+        	contentString += '<li><a href="' + data[i].link + '" target="_blank">' + data[i].title + '</a></li>';
+            console.log(data[i], contentString);
+        }
+        contentString += "</ul>";
+     })
+     .fail(function(jqXHR, textStatus, errorThrown) {
+
+         // log error to browser's console
+         console.log(errorThrown.toString());
+     });
+    
+    google.maps.event.addListener(marker, 'click', function() {showInfo(marker, contentString);});
+    
+    // add the new marker to markers[]
     markers.push(marker);
 }
 
