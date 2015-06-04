@@ -73,10 +73,12 @@ $(function() {
 function addMarker(place)
 {
 	var contentString;
-	// create a new object
+	
+	// create a new marker object
     var marker = new MarkerWithLabel({
     	position: {lat: parseFloat(place.latitude), lng: parseFloat(place.longitude)},
     	map: map,
+    	labelAnchor: new google.maps.Point(100, 0),
     	labelContent: place.place_name + ", " + place.admin_code1,
     	icon: 'img/text.png',
     	labelClass: 'label'
@@ -96,7 +98,6 @@ function addMarker(place)
         for (var i = 0; i < data.length; i++)
         {
         	contentString += '<li><a href="' + data[i].link + '" target="_blank">' + data[i].title + '</a></li>';
-            console.log(data[i], contentString);
         }
         contentString += "</ul>";
      })
@@ -143,7 +144,7 @@ function configure()
         source: search,
         templates: {
             empty: "no places found yet",
-            suggestion: _.template("<p><%- place_name %>,&nbsp;<%- admin_code1 %>&nbsp;<%- postal_code %></p>")
+            suggestion: _.template("<p><%- place_name %>,&nbsp;<%- admin_code1 %>&nbsp;<%- postal_code %> \(<%- admin_name2 %>\)</p>")
         }
     });
 
