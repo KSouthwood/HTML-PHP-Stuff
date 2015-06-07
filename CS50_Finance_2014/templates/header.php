@@ -25,21 +25,21 @@
         <div class="container">
 
             <div id="top">
-                <a href="/"><img alt="C$50 Finance" src="../public/img/logo.gif"/></a>
+                <a href="/"><img alt="C$50 Finance" src="img/logo.gif"/></a>
             </div>
             
             <?php if (isset($_SESSION["id"])): ?>
             <div id="navlist">
                 <ul>
                     <!-- <li><a href="index.php"><?= $_SESSION["name"] ?>'s Portfolio</a></li> -->
-                    <li><a href="/public/index.php">Portfolio</a></li>
-                    <li><a href="/public/sell.php">Sell</a></li>
-                    <li><a href="/public/buy.php">Buy</a></li>
-                    <li><a href="/public/quote.php">Quote</a></li>
-                    <li><a href="/public/history.php">History</a></li>
-                    <li><a href="/public/funds.php">Funds</a></li>
-                    <li><a href="/public/change_password.php">Change Password</a></li>
-                    <li><a href="/public/logout.php">Log Out</a></li>
+                    <li><a href="index.php">Portfolio</a></li>
+                    <li><a href="sell.php">Sell</a></li>
+                    <li><a href="buy.php">Buy</a></li>
+                    <li><a href="quote.php">Quote</a></li>
+                    <li><a href="history.php">History</a></li>
+                    <li><a href="funds.php">Funds</a></li>
+                    <li><a href="change_password.php">Change Password</a></li>
+                    <li><a href="logout.php">Log Out</a></li>
                 </ul>
             </div>
             <?php endif ?>
