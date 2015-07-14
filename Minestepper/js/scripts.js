@@ -71,14 +71,13 @@ var SC2 = 10;
  */
 function initialize() {
 	var canvas = document.getElementById('gameboard');
+	var ctx = canvas.getContext('2d');
 	canvas.addEventListener('mousedown', mouseClick, false);
 	fitToContainer(canvas);
 	drawInitGameboard(canvas, SIZE);
-	var gameboard = initArray(SIZE, MI);
+	gameboard = initArray(SIZE, MI);
 	populateGameboard(gameboard);
-	var minecount = findMines(gameboard);
-	console.log(gameboard);
-	console.log(minecount);
+	minecount = findMines(gameboard);
 }
 
 /**
@@ -100,7 +99,7 @@ function initArray(size, fill) {
 
 /**
  *  Canvas -> Canvas
- *  calculates the size os the canvas for the gameboard
+ *  calculates the size of the canvas for the gameboard
  *
  */
 function fitToContainer(canvas) {
@@ -113,10 +112,10 @@ function fitToContainer(canvas) {
  *  draws the boxes on the gameboard
  */
 
-function drawInitGameboard(canvas, size) {
+function drawInitGameboard(context, size) {
 	for (var i = 0; i < SIZE; i++) {
 		for (var j = 0; j < SIZE; j++) {
-			addRect(canvas, 'gray', i, j);
+			addRect(context, 'gray', i, j);
 		};
 	};
 }
@@ -178,14 +177,22 @@ function mouseClick(event) {
 	var x = event.x;
 	var y = event.y;
 	var canvas = document.getElementById("gameboard");
-	var xx = x - canvas.offsetParent.offsetLeft;
+	// subtracting 17 to accomodate row margin and border
+	var xx = x - canvas.offsetParent.offsetLeft - 17;
 	var yy = y - canvas.offsetParent.offsetTop;
 
 	// convert (x,y) into (row,col) of square that was clicked
-	var row = Math.floor(xx / OFFSET);
-	var col = Math.floor(yy / OFFSET);
-
-	addRect(canvas, 'red', row, col);
+	var row = Math.floor(yy / OFFSET);
+	var col = Math.floor(xx / OFFSET);
+	console.log('Clicked: {', x, ',', y, '} Canvas point: {', xx, ',', yy, '} Gameboard {', row, ',', col, '}');
+	addRect(canvas, 'white', row, col);
+	if (gameboard[row][col]) {
+		ctx = canvas.getContext('2d');
+		drawMine(ctx, row, col);
+	}
+	else {
+		drawNumber(canvas, row, col);
+	}
 }
 
 /**
@@ -193,8 +200,30 @@ function mouseClick(event) {
  *  adds a rectangle to the canvas
  */
 
-function addRect(canvas, color, x, y) {
-	ctx = canvas.getContext('2d');
-	ctx.fillStyle = color;
-	ctx.fillRect((x * OFFSET + PADDING), (y * OFFSET + PADDING), BOX_PXL, BOX_PXL);
+function addRect(context, color, r, c) {
+	context.fillStyle = color;
+	context.fillRect(rctop(c), rctop(r), BOX_PXL, BOX_PXL);
+}
+
+/**
+ * Canvas Natural Natural -> Image
+ * draws the image of the mine onto the canvas at the given row and column
+ * 
+ */
+// !!! write function
+function drawMine(canvas, row, col) {
+	mineImg = new Image();
+	mineImg.src = "./img/mine.svg";
+	mineImg.onLoad = function () {
+		context.drawImage(mineImg, (row * OFFSET + PADDING), (col * OFFSET + PADDING), BOX_PXL, BOX_PXL);
+	}
+}
+
+/**
+ *  Natural -> Natural
+ *  calculates the pixel offset for a specified row or column
+ */
+
+function rctop(n) {
+	return (PADDING + (n * BOX_PXL) + (n * PADDING))
 }
