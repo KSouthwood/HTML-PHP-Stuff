@@ -76,20 +76,29 @@ var SC2 = 10;
 var colors = ['cyan', 'lightskyblue', 'deepskyblue', 'blue', 'darkblue', 'forestgreen', 'darkgreen', 'orangered', 'red'];
 
 /**
- *  FlagStatus is Enumeration
+ *  FlagState is Enumeration
  *  interp. players status of what's in a square
  */
 
-var FS0 = "blank";
+var FS0 = "unknown";
 var FS1 = "maybe";
 var FS2 = "definite";
-
+var FS3 = "cleared";
 /**
- *  Flags is Array of FlagStatus
+ *  Flags is Array of FlagState
  *  array to hold the players status of what's in a square
  */
-var F1 = [[FS0, FS1], [FS2, FS0]];
+var F1 = [[FS0, FS1], [FS2, FS3]];
 var flags;
+
+/**
+ * GameOver is Boolean
+ * interp. boolean flag to indicate if the game is over (either found all the mines or stepped on one)
+ */
+var GO_T = true;
+var GO_F = false;
+
+var game = GO_F;
 
 /**
  *  Function Definitions
@@ -104,13 +113,12 @@ function initialize() {
 	var canvas = document.getElementById('gameboard');
 	var ctx = canvas.getContext('2d');
 	canvas.addEventListener('click', handleClick, false);
-	resizeCanvas(canvas);
-	ctx.fillStyle = "lightgray";
-	ctx.fillRect(0, 0, canvas.width, canvas.height);
+	
+	resizeCanvas(canvas); // sets size of canvas
+	
 	drawInitMinefield(ctx, SIZE);
-	minefield = initArray(SIZE, MI);
-	populateMinefield(minefield);
-	minecount = findMines(minefield);
+	minefield = populateMinefield();
+	minecount = countMines(minefield);
 	flags = initArray(SIZE, FS0);
 }
 
@@ -121,10 +129,15 @@ function initialize() {
  */
 
 function handleClick(event) {
+	if (game) {
+		game = GO_F;
+		initialize();
+		return;
+	}
 	if (event.ctrlKey) {
-		singleClick(event);
+		changeState(event);
 	} else {
-		doubleClick(event);
+		reveal(event);
 	}
 }
 /**
@@ -132,14 +145,18 @@ function handleClick(event) {
  *  handles double click on the canvas - reveals whats behind the square
  * !!! - not working - col keeps being off by 1
  */
-function doubleClick(event) {
+function reveal(event) {
 	var canvas = document.getElementById("gameboard");
 	var ctx = canvas.getContext('2d');
 	var rc = getRowCol(canvas, event);
 
 	clearRect(ctx, rc.row, rc.col);
+	flags[rc.row][rc.col] = FS3;
+	
 	if (minefield[rc.row][rc.col]) {
+		game = GO_T;
 		drawMine(ctx, rc.row, rc.col);
+		gameOver(canvas, ctx);
 	} else {
 		safeStep(ctx, rc.row, rc.col);
 	}
@@ -150,30 +167,33 @@ function doubleClick(event) {
  *  changes the square status from blank to question mark and back
  */
 
-function singleClick(event) {
+function changeState(event) {
 	var canvas = document.getElementById("gameboard");
 	var context = canvas.getContext('2d');
 	var rc = getRowCol(canvas, event);
 
 	// use switch/case statement??
 	switch (flags[rc.row][rc.col]) {
-	// if current status is blank, update to maybe and display question mark on top of square
+	// if current status is unknown, update to definite and display mine on top of square
 	case FS0:
-		flags[rc.row][rc.col] = FS1;
-		drawRect(context, 'gray', rc.row, rc.col);
-		drawNumber(context, rc.row, rc.col, "?", 'black');
-		break;
-	// if current status is maybe, update to definite and display flag on top of square
-	case FS1:
 		flags[rc.row][rc.col] = FS2;
 		drawRect(context, 'gray', rc.row, rc.col);
 		drawMine(context, rc.row, rc.col);
 		break;
-	// if current status is definite, update to blank and redraw blank square
+	// if current status is maybe, update to unknown and redraw blank square
+	case FS1:
+		flags[rc.row][rc.col] = FS2;
+		drawRect(context, 'gray', rc.row, rc.col);
+		break;
+	// if current status is definite, update to maybe and display question mark on top of square
 	case FS2:
-	default:
 		flags[rc.row][rc.col] = FS0;
 		drawRect(context, 'gray', rc.row, rc.col);
+		drawNumber(context, rc.row, rc.col, "?", 'black');
+		break;
+	// if current status is cleared, do nothing
+	case FS3:
+	default:
 		break;
 	}
 }
@@ -186,6 +206,12 @@ function singleClick(event) {
 function resizeCanvas(canvas) {
 	canvas.width = (SIZE * BOX_PXL) + ((SIZE + 1) * PADDING);
 	canvas.height = canvas.width;
+	
+	// fill background of canvas for gridlines
+	var ctx = canvas.getContext('2d');
+	ctx.fillStyle = "lightgray";
+	ctx.fillRect(0, 0, canvas.width, canvas.height);
+
 }
 
 /**
@@ -203,7 +229,7 @@ function drawInitMinefield(context, size) {
 
 /**
  *  Natural Number/String/Boolean -> Array
- *  defines the array for the minefield and fills it with a default value
+ *  defines an array and fills it with a supplied value
  *
  */
 function initArray(size, fill) {
@@ -223,25 +249,30 @@ function initArray(size, fill) {
  *  place mines randomly on the minefield
  *
  */
-function populateMinefield(minefield) {
+function populateMinefield() {
+	// create minefield
+	var mf = initArray(SIZE, MI);
+		
 	// do mines in 20% of the minefield
 	var mines = Math.floor((SIZE * SIZE) * 0.2);
 	while (mines > 0) {
 		var placeMine = Math.floor(Math.random() * (SIZE * SIZE));
 		var row = Math.floor(placeMine / SIZE);
 		var col = placeMine % SIZE;
-		if (minefield[row][col] == MI) {
-			minefield[row][col] = MA;
+		if (mf[row][col] == MI) {
+			mf[row][col] = MA;
 			mines--;
 		}
 	}
+	
+	return mf;
 }
 
 /**
  *  Array -> Array
  *  iterate through minefield and count up mines around each cell
  */
-function findMines(minefield) {
+function countMines(minefield) {
 	// create array for mine count
 	var mc = initArray(SIZE, 0);
 	var xlim = SIZE - 1;
@@ -290,7 +321,6 @@ function clearRect(context, row, col) {
  * draws the image of the mine onto the canvas at the given row and column
  *
  */
-// !!! image drawing to canvas, just very small. have to use Inkscape to change bounding box size??
 function drawMine(context, row, col) {
 	context.drawImage(mineImg, rctop(col), rctop(row), BOX_PXL, BOX_PXL);
 }
@@ -326,6 +356,7 @@ function getRowCol(canvas, event) {
 	clicked.row = Math.floor(yy / OFFSET);
 	clicked.col = Math.floor(xx / OFFSET);
 
+	// TODO - remove when complete - just for debugging purposes
 	console.log('Clicked: {', event.x, ',', event.y, '} Canvas point: {', xx, ',', yy, '} Gameboard {', clicked.row, ',', clicked.col, '}');
 
 	return clicked;
@@ -355,4 +386,20 @@ function safeStep(context, row, col) {
 	// no mines as a neighbor, so check if any other neighbors have zero as well and clear those cells
 	drawNumber(context, row, col, minecount[row][col], colors[minecount[row][col]]);
 	// TODO - remove (just added in so routine will work for now...)
+	return;
+}
+
+function gameOver(canvas, context) {
+	// display game over message on canvas
+	context.fillStyle = 'red';
+	context.font = 'bold 40px san-serif';
+	context.textAlign = 'center';
+	context.textBaseline = 'middle';
+	context.fillText("Game Over!!", (canvas.width / 2), (canvas.height / 2));
+	
+	context.fillStyle = 'black';
+	context.font = '12px serif';
+	context.fillText("(Click to play again.)", (canvas.width / 2), (canvas.height - 20));
+	
+	return;
 }
