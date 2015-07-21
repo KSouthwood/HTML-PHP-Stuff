@@ -107,7 +107,7 @@ var game = GO_F;
 
 /**
  *  Initialize variables and minefield
- *  !!! - write function
+ *  
  */
 function initialize() {
 	var canvas = document.getElementById('gameboard');
@@ -116,10 +116,15 @@ function initialize() {
 	
 	resizeCanvas(canvas); // sets size of canvas
 	
+	// set up arrays for game play
 	drawInitMinefield(ctx, SIZE);
 	minefield = populateMinefield();
 	minecount = countMines(minefield);
 	flags = initArray(SIZE, FS0);
+	
+	mines = Math.floor((SIZE * SIZE) * 0.2);
+	clear = (SIZE * SIZE) - mines;
+	updateMines(mines);
 }
 
 /**
@@ -134,6 +139,7 @@ function handleClick(event) {
 		initialize();
 		return;
 	}
+	
 	if (event.ctrlKey) {
 		changeState(event);
 	} else {
@@ -145,20 +151,33 @@ function handleClick(event) {
  *  handles double click on the canvas - reveals whats behind the square
  * !!! - not working - col keeps being off by 1
  */
+
 function reveal(event) {
 	var canvas = document.getElementById("gameboard");
 	var ctx = canvas.getContext('2d');
 	var rc = getRowCol(canvas, event);
 
-	clearRect(ctx, rc.row, rc.col);
+	// return if we've already revealed this cell
+	if (flags[rc.row][rc.col] == FS3) {
+		return;
+	}
+	
+	// clear the cell and set it's state to cleared
+	clearRect(ctx, rc);
 	flags[rc.row][rc.col] = FS3;
 	
+	// 
 	if (minefield[rc.row][rc.col]) {
 		game = GO_T;
-		drawMine(ctx, rc.row, rc.col);
+		drawMine(ctx, rc);
 		gameOver(canvas, ctx);
 	} else {
-		safeStep(ctx, rc.row, rc.col);
+		safeStep(ctx, rc);
+		clear--;
+		if (clear == 0) {
+			game = GO_T;
+			gameWon(canvas, ctx);
+		}
 	}
 }
 
@@ -174,22 +193,26 @@ function changeState(event) {
 
 	// use switch/case statement??
 	switch (flags[rc.row][rc.col]) {
-	// if current status is unknown, update to definite and display mine on top of square
+	// if current status is unknown, chanage to definite and display mine on top of square
 	case FS0:
 		flags[rc.row][rc.col] = FS2;
-		drawRect(context, 'gray', rc.row, rc.col);
-		drawMine(context, rc.row, rc.col);
+		drawRect(context, 'gray', rc);
+		drawMine(context, rc);
+		mines--;
+		updateMines(mines);
 		break;
-	// if current status is maybe, update to unknown and redraw blank square
+	// if current status is maybe, change to unknown and redraw blank square
 	case FS1:
-		flags[rc.row][rc.col] = FS2;
-		drawRect(context, 'gray', rc.row, rc.col);
-		break;
-	// if current status is definite, update to maybe and display question mark on top of square
-	case FS2:
 		flags[rc.row][rc.col] = FS0;
-		drawRect(context, 'gray', rc.row, rc.col);
-		drawNumber(context, rc.row, rc.col, "?", 'black');
+		drawRect(context, 'gray', rc);
+		break;
+	// if current status is definite, change to maybe and display question mark on top of square
+	case FS2:
+		flags[rc.row][rc.col] = FS1;
+		drawRect(context, 'gray', rc);
+		drawNumber(context, rc, "?", 'black');
+		mines++;
+		updateMines(mines);
 		break;
 	// if current status is cleared, do nothing
 	case FS3:
@@ -220,9 +243,10 @@ function resizeCanvas(canvas) {
  */
 
 function drawInitMinefield(context, size) {
-	for (var r = 0; r < SIZE; r++) {
-		for (var c = 0; c < SIZE; c++) {
-			drawRect(context, 'gray', r, c);
+	var rc = {"row": 0, "col": 0};
+	for (rc.row = 0; rc.row < SIZE; rc.row++) {
+		for (rc.col = 0; rc.col < SIZE; rc.col++) {
+			drawRect(context, 'gray', rc);
 		};
 	};
 }
@@ -302,9 +326,9 @@ function countMines(minefield) {
  *  adds a rectangle to the canvas
  */
 
-function drawRect(context, color, row, col) {
+function drawRect(context, color, rc) {
 	context.fillStyle = color;
-	context.fillRect(rctop(col), rctop(row), BOX_PXL, BOX_PXL);
+	context.fillRect(rctop(rc.col), rctop(rc.row), BOX_PXL, BOX_PXL);
 }
 
 /**
@@ -312,8 +336,8 @@ function drawRect(context, color, row, col) {
  *  adds a rectangle to the canvas
  */
 
-function clearRect(context, row, col) {
-	context.clearRect(rctop(col), rctop(row), BOX_PXL, BOX_PXL);
+function clearRect(context, rc) {
+	context.clearRect(rctop(rc.col), rctop(rc.row), BOX_PXL, BOX_PXL);
 }
 
 /**
@@ -321,8 +345,8 @@ function clearRect(context, row, col) {
  * draws the image of the mine onto the canvas at the given row and column
  *
  */
-function drawMine(context, row, col) {
-	context.drawImage(mineImg, rctop(col), rctop(row), BOX_PXL, BOX_PXL);
+function drawMine(context, rc) {
+	context.drawImage(mineImg, rctop(rc.col), rctop(rc.row), BOX_PXL, BOX_PXL);
 }
 
 /**
@@ -331,12 +355,12 @@ function drawMine(context, row, col) {
  *
  */
 
-function drawNumber(context, row, col, character, color) {
+function drawNumber(context, rc, character, color) {
 	context.fillStyle = color;
 	context.font = 'bold ' + (BOX_PXL - (PADDING * 2)) + 'px san-serif';
 	context.textAlign = 'center';
 	context.textBaseline = 'middle';
-	context.fillText(character, (rctop(col) + (BOX_PXL / 2)), (rctop(row) + (BOX_PXL / 2)));
+	context.fillText(character, (rctop(rc.col) + (BOX_PXL / 2)), (rctop(rc.row) + (BOX_PXL / 2)));
 }
 
 /**
@@ -376,20 +400,28 @@ function rctop(n) {
  *  safe step (found no mine), now we reveal how many mines are around us
  */
 
-function safeStep(context, row, col) {
+function safeStep(context, rc) {
 	// one or more mines as a neighbor, so just print how many and return
-	if (minefield[row, col] != 0) {
-		drawNumber(context, row, col, minecount[row][col], colors[minecount[row][col]]);
+	if (minefield[rc.row, rc.col] != 0) {
+		drawNumber(context, rc, minecount[rc.row][rc.col], colors[minecount[rc.row][rc.col]]);
 		return;
 	}
 
 	// no mines as a neighbor, so check if any other neighbors have zero as well and clear those cells
-	drawNumber(context, row, col, minecount[row][col], colors[minecount[row][col]]);
+	drawNumber(context, rc, minecount[rc.row][rc.col], colors[minecount[rc.row][rc.col]]);
 	// TODO - remove (just added in so routine will work for now...)
 	return;
 }
 
+/**
+ *  Canvas Context -> String
+ *  displays game over message
+ * @param {Object} canvas
+ * @param {Object} context
+ */
+
 function gameOver(canvas, context) {
+	
 	// display game over message on canvas
 	context.fillStyle = 'red';
 	context.font = 'bold 40px san-serif';
@@ -401,5 +433,43 @@ function gameOver(canvas, context) {
 	context.font = '12px serif';
 	context.fillText("(Click to play again.)", (canvas.width / 2), (canvas.height - 20));
 	
+	return;
+}
+
+/**
+ *  Canvas Context -> String
+ *  displays game over message
+ * @param {Object} canvas
+ * @param {Object} context
+ */
+
+function gameWon(canvas, context) {
+	
+	// display game over message on canvas
+	context.fillStyle = 'blue';
+	context.font = 'bold 40px san-serif';
+	context.textAlign = 'center';
+	context.textBaseline = 'middle';
+	context.fillText("You won!!", (canvas.width / 2), (canvas.height / 2));
+	
+	context.fillStyle = 'black';
+	context.font = '12px serif';
+	context.fillText("(Click to play again.)", (canvas.width / 2), (canvas.height - 20));
+	
+	return;
+}
+
+function clearZeros() {
+	return;
+}
+
+/**
+ *  Natural -> String
+ *  Updates the mines counter on the HTML page
+ */
+
+function updateMines(sc) {
+	var elem = document.getElementById("mines");
+	elem.innerHTML = sc;
 	return;
 }
