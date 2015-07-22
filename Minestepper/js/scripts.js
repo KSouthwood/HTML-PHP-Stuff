@@ -110,8 +110,8 @@ var game = GO_F;
  *  
  */
 function initialize() {
-	var canvas = document.getElementById('gameboard');
-	var ctx = canvas.getContext('2d');
+	canvas = document.getElementById('gameboard');
+	ctx = canvas.getContext('2d');
 	canvas.addEventListener('click', handleClick, false);
 	
 	resizeCanvas(canvas); // sets size of canvas
@@ -153,8 +153,8 @@ function handleClick(event) {
  */
 
 function reveal(event) {
-	var canvas = document.getElementById("gameboard");
-	var ctx = canvas.getContext('2d');
+	// var canvas = document.getElementById("gameboard");
+	// var ctx = canvas.getContext('2d');
 	var rc = getRowCol(canvas, event);
 
 	// return if we've already revealed this cell
@@ -402,14 +402,15 @@ function rctop(n) {
 
 function safeStep(context, rc) {
 	// one or more mines as a neighbor, so just print how many and return
-	if (minefield[rc.row, rc.col] != 0) {
+	if (minecount[rc.row][rc.col] > 0) {
 		drawNumber(context, rc, minecount[rc.row][rc.col], colors[minecount[rc.row][rc.col]]);
 		return;
 	}
 
 	// no mines as a neighbor, so check if any other neighbors have zero as well and clear those cells
-	drawNumber(context, rc, minecount[rc.row][rc.col], colors[minecount[rc.row][rc.col]]);
 	// TODO - remove (just added in so routine will work for now...)
+	console.log("{" + rc.row + "," + rc.col + "} [false, false, false, false] - Initial call to clearZeros.");
+	clearZeros(rc, [false, false, false, false]);
 	return;
 }
 
@@ -459,8 +460,47 @@ function gameWon(canvas, context) {
 	return;
 }
 
-function clearZeros() {
-	return;
+function clearZeros(cell, dirs) {
+	console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - First call to clear zeros."); // TODO - Remove
+	// check if dirs is all true
+	if (dirs[0] && dirs[1] && dirs[2] && dirs[3]) {
+		return;
+	}
+	
+	// set-up lookup table
+	var move = [{r: -1, c: 0, d: 2}, {r: 0, c: 1, d: 3}, {r: 1, c: 0, d: 0}, {r: 0, c: -1, d: 1}];
+	
+	// begin checking each direction for another zero
+	for (var i=0; i < move.length; i++) {
+		console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Trying direction " + i); // TODO - Remove
+		if (dirs[i]) {
+			console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Direction has been tried."); // TODO - Remove
+			continue;
+		}
+		
+		dirs[i] = true;
+
+		var rc =	{row: cell.row + move[i].r,
+					col: cell.col + move[i].c};
+
+		console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Checking for 0 at {" + rc.row + "," + rc.col + "}"); // TODO - Remove		
+		if ((rc.row < 0) || (rc.row >= SIZE) || (rc.col < 0) || (rc.col >= SIZE) || (flags[rc.row][rc.col] == FS3)) {
+			console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Cell out of bounds or cleared."); // TODO - Remove
+			continue;
+		}
+		
+		if (minecount[rc.row][rc.col] == 0) {
+			var j = [false, false, false, false];
+			j[move[i].d] = true;
+			clearRect(ctx, rc);
+			flags[rc.row][rc.col] = FS3;
+			clear--;
+			console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " Zero found. Calling new clearZeros with: {" + rc.row + "," + rc.col + "} " + JSON.stringify(j)); // TODO - remove
+			clearZeros(rc, j);
+		}
+	};
+	console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - All directions tried. Returning."); // TODO - Remove
+return;
 }
 
 /**
