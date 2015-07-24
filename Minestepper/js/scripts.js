@@ -84,6 +84,7 @@ var FS0 = "unknown";
 var FS1 = "maybe";
 var FS2 = "definite";
 var FS3 = "cleared";
+
 /**
  *  Flags is Array of FlagState
  *  array to hold the players status of what's in a square
@@ -101,6 +102,16 @@ var GO_F = false;
 var game = GO_F;
 
 /**
+ *  Difficulty is Number
+ *  interp. percentage of cells to fill with mines
+ */
+var EASY = 0.1; // 10%
+var STND = 0.2; // 20%
+var DIFF = 0.3; // 30%
+
+var difficulty = STND; // set inital difficulty to standard
+
+/**
  *  Function Definitions
  *  ====================
  */
@@ -114,7 +125,7 @@ function initialize() {
 	ctx = canvas.getContext('2d');
 	canvas.addEventListener('click', handleClick, false);
 	
-	resizeCanvas(canvas); // sets size of canvas
+	resizeCanvas(); // sets size of canvas
 	
 	// set up arrays for game play
 	drawInitMinefield(ctx, SIZE);
@@ -122,7 +133,7 @@ function initialize() {
 	minecount = countMines(minefield);
 	flags = initArray(SIZE, FS0);
 	
-	mines = Math.floor((SIZE * SIZE) * 0.2);
+	mines = Math.floor((SIZE * SIZE) * difficulty);
 	clear = (SIZE * SIZE) - mines;
 	updateMines(mines);
 }
@@ -153,9 +164,7 @@ function handleClick(event) {
  */
 
 function reveal(event) {
-	// var canvas = document.getElementById("gameboard");
-	// var ctx = canvas.getContext('2d');
-	var rc = getRowCol(canvas, event);
+	var rc = getRowCol(event);
 
 	// return if we've already revealed this cell
 	if (flags[rc.row][rc.col] == FS3) {
@@ -163,20 +172,20 @@ function reveal(event) {
 	}
 	
 	// clear the cell and set it's state to cleared
-	clearRect(ctx, rc);
+	clearRect(rc);
 	flags[rc.row][rc.col] = FS3;
 	
 	// 
 	if (minefield[rc.row][rc.col]) {
 		game = GO_T;
-		drawMine(ctx, rc);
-		gameOver(canvas, ctx);
+		drawMine(rc);
+		gameOver();
 	} else {
-		safeStep(ctx, rc);
+		safeStep(rc);
 		clear--;
 		if (clear == 0) {
 			game = GO_T;
-			gameWon(canvas, ctx);
+			gameWon();
 		}
 	}
 }
@@ -187,30 +196,28 @@ function reveal(event) {
  */
 
 function changeState(event) {
-	var canvas = document.getElementById("gameboard");
-	var context = canvas.getContext('2d');
-	var rc = getRowCol(canvas, event);
+	var rc = getRowCol(event);
 
 	// use switch/case statement??
 	switch (flags[rc.row][rc.col]) {
 	// if current status is unknown, chanage to definite and display mine on top of square
 	case FS0:
 		flags[rc.row][rc.col] = FS2;
-		drawRect(context, 'gray', rc);
-		drawMine(context, rc);
+		drawRect('gray', rc);
+		drawMine(rc);
 		mines--;
 		updateMines(mines);
 		break;
 	// if current status is maybe, change to unknown and redraw blank square
 	case FS1:
 		flags[rc.row][rc.col] = FS0;
-		drawRect(context, 'gray', rc);
+		drawRect('gray', rc);
 		break;
 	// if current status is definite, change to maybe and display question mark on top of square
 	case FS2:
 		flags[rc.row][rc.col] = FS1;
-		drawRect(context, 'gray', rc);
-		drawNumber(context, rc, "?", 'black');
+		drawRect('gray', rc);
+		drawNumber(rc, "?", 'black');
 		mines++;
 		updateMines(mines);
 		break;
@@ -226,12 +233,11 @@ function changeState(event) {
  *  calculates the size of the canvas for the minefield
  *
  */
-function resizeCanvas(canvas) {
+function resizeCanvas() {
 	canvas.width = (SIZE * BOX_PXL) + ((SIZE + 1) * PADDING);
 	canvas.height = canvas.width;
 	
 	// fill background of canvas for gridlines
-	var ctx = canvas.getContext('2d');
 	ctx.fillStyle = "lightgray";
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -242,11 +248,11 @@ function resizeCanvas(canvas) {
  *  draws the boxes on the minefield
  */
 
-function drawInitMinefield(context, size) {
+function drawInitMinefield(size) {
 	var rc = {"row": 0, "col": 0};
 	for (rc.row = 0; rc.row < SIZE; rc.row++) {
 		for (rc.col = 0; rc.col < SIZE; rc.col++) {
-			drawRect(context, 'gray', rc);
+			drawRect('gray', rc);
 		};
 	};
 }
@@ -278,7 +284,7 @@ function populateMinefield() {
 	var mf = initArray(SIZE, MI);
 		
 	// do mines in 20% of the minefield
-	var mines = Math.floor((SIZE * SIZE) * 0.2);
+	var mines = Math.floor((SIZE * SIZE) * difficulty);
 	while (mines > 0) {
 		var placeMine = Math.floor(Math.random() * (SIZE * SIZE));
 		var row = Math.floor(placeMine / SIZE);
@@ -326,9 +332,9 @@ function countMines(minefield) {
  *  adds a rectangle to the canvas
  */
 
-function drawRect(context, color, rc) {
-	context.fillStyle = color;
-	context.fillRect(rctop(rc.col), rctop(rc.row), BOX_PXL, BOX_PXL);
+function drawRect(color, rc) {
+	ctx.fillStyle = color;
+	ctx.fillRect(rctop(rc.col), rctop(rc.row), BOX_PXL, BOX_PXL);
 }
 
 /**
@@ -336,8 +342,8 @@ function drawRect(context, color, rc) {
  *  adds a rectangle to the canvas
  */
 
-function clearRect(context, rc) {
-	context.clearRect(rctop(rc.col), rctop(rc.row), BOX_PXL, BOX_PXL);
+function clearRect(rc) {
+	ctx.clearRect(rctop(rc.col), rctop(rc.row), BOX_PXL, BOX_PXL);
 }
 
 /**
@@ -345,8 +351,8 @@ function clearRect(context, rc) {
  * draws the image of the mine onto the canvas at the given row and column
  *
  */
-function drawMine(context, rc) {
-	context.drawImage(mineImg, rctop(rc.col), rctop(rc.row), BOX_PXL, BOX_PXL);
+function drawMine(rc) {
+	ctx.drawImage(mineImg, rctop(rc.col), rctop(rc.row), BOX_PXL, BOX_PXL);
 }
 
 /**
@@ -355,27 +361,29 @@ function drawMine(context, rc) {
  *
  */
 
-function drawNumber(context, rc, character, color) {
-	context.fillStyle = color;
-	context.font = 'bold ' + (BOX_PXL - (PADDING * 2)) + 'px san-serif';
-	context.textAlign = 'center';
-	context.textBaseline = 'middle';
-	context.fillText(character, (rctop(rc.col) + (BOX_PXL / 2)), (rctop(rc.row) + (BOX_PXL / 2)));
+function drawNumber(rc, character, color) {
+	ctx.fillStyle = color;
+	ctx.font = 'bold ' + (BOX_PXL - (PADDING * 2)) + 'px san-serif';
+	ctx.textAlign = 'center';
+	ctx.textBaseline = 'middle';
+	ctx.fillText(character, (rctop(rc.col) + (BOX_PXL / 2)), (rctop(rc.row) + (BOX_PXL / 2)));
 }
 
 /**
  *  Event -> Natural
  */
-function getRowCol(canvas, event) {
+function getRowCol(event) {
 	var clicked = {
 		row : 0,
 		col : 0
 	};
 
 	// subtracting 15 to accomodate row margin and border
-	var xx = (event.x - canvas.offsetParent.offsetLeft - 15);
-	var yy = (event.y - canvas.offsetParent.offsetTop);
-
+	// var xx = (event.x - canvas.offsetParent.offsetLeft - 15);
+	// var yy = (event.y - canvas.offsetParent.offsetTop);
+	var rect = canvas.getBoundingClientRect();
+	var xx = event.clientX - rect.left;
+	var yy = event.clientY - rect.top;
 	// convert (x,y) into (row,col) of square that was clicked
 	clicked.row = Math.floor(yy / OFFSET);
 	clicked.col = Math.floor(xx / OFFSET);
@@ -400,10 +408,10 @@ function rctop(n) {
  *  safe step (found no mine), now we reveal how many mines are around us
  */
 
-function safeStep(context, rc) {
+function safeStep(rc) {
 	// one or more mines as a neighbor, so just print how many and return
 	if (minecount[rc.row][rc.col] > 0) {
-		drawNumber(context, rc, minecount[rc.row][rc.col], colors[minecount[rc.row][rc.col]]);
+		drawNumber(rc, minecount[rc.row][rc.col], colors[minecount[rc.row][rc.col]]);
 		return;
 	}
 
@@ -421,18 +429,18 @@ function safeStep(context, rc) {
  * @param {Object} context
  */
 
-function gameOver(canvas, context) {
+function gameOver() {
 	
 	// display game over message on canvas
-	context.fillStyle = 'red';
-	context.font = 'bold 40px san-serif';
-	context.textAlign = 'center';
-	context.textBaseline = 'middle';
-	context.fillText("Game Over!!", (canvas.width / 2), (canvas.height / 2));
+	ctx.fillStyle = 'red';
+	ctx.font = 'bold 40px san-serif';
+	ctx.textAlign = 'center';
+	ctx.textBaseline = 'middle';
+	ctx.fillText("Game Over!!", (canvas.width / 2), (canvas.height / 2));
 	
-	context.fillStyle = 'black';
-	context.font = '12px serif';
-	context.fillText("(Click to play again.)", (canvas.width / 2), (canvas.height - 20));
+	ctx.fillStyle = 'black';
+	ctx.font = '12px serif';
+	ctx.fillText("(Click to play again.)", (canvas.width / 2), (canvas.height - 20));
 	
 	return;
 }
@@ -444,18 +452,18 @@ function gameOver(canvas, context) {
  * @param {Object} context
  */
 
-function gameWon(canvas, context) {
+function gameWon() {
 	
 	// display game over message on canvas
-	context.fillStyle = 'blue';
-	context.font = 'bold 40px san-serif';
-	context.textAlign = 'center';
-	context.textBaseline = 'middle';
-	context.fillText("You won!!", (canvas.width / 2), (canvas.height / 2));
+	ctx.fillStyle = 'blue';
+	ctx.font = 'bold 40px san-serif';
+	ctx.textAlign = 'center';
+	ctx.textBaseline = 'middle';
+	ctx.fillText("You won!!", (canvas.width / 2), (canvas.height / 2));
 	
-	context.fillStyle = 'black';
-	context.font = '12px serif';
-	context.fillText("(Click to play again.)", (canvas.width / 2), (canvas.height - 20));
+	ctx.fillStyle = 'black';
+	ctx.font = '12px serif';
+	ctx.fillText("(Click to play again.)", (canvas.width / 2), (canvas.height - 20));
 	
 	return;
 }
@@ -492,7 +500,7 @@ function clearZeros(cell, dirs) {
 		if (minecount[rc.row][rc.col] == 0) {
 			var j = [false, false, false, false];
 			j[move[i].d] = true;
-			clearRect(ctx, rc);
+			clearRect(rc);
 			flags[rc.row][rc.col] = FS3;
 			clear--;
 			console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " Zero found. Calling new clearZeros with: {" + rc.row + "," + rc.col + "} " + JSON.stringify(j)); // TODO - remove
@@ -511,5 +519,37 @@ return;
 function updateMines(sc) {
 	var elem = document.getElementById("mines");
 	elem.innerHTML = sc;
+	return;
+}
+
+function changeDiff() {
+	switch (event.target.id) {
+		case "easy":
+			document.getElementById("easy").classList.toggle("btn-primary", true);
+			document.getElementById("stnd").classList.toggle("btn-primary", false);
+			document.getElementById("diff").classList.toggle("btn-primary", false);
+			difficulty = EASY;
+			initialize();
+			break;
+		case "stnd":
+			document.getElementById("easy").classList.toggle("btn-primary", false);
+			document.getElementById("stnd").classList.toggle("btn-primary", true);
+			document.getElementById("diff").classList.toggle("btn-primary", false);
+			difficulty = STND;
+			initialize();
+			break;
+		case "diff":
+			document.getElementById("easy").classList.toggle("btn-primary", false);
+			document.getElementById("stnd").classList.toggle("btn-primary", false);
+			document.getElementById("diff").classList.toggle("btn-primary", true);
+			difficulty = DIFF;
+			initialize();
+			break;
+	}
+}
+
+function changeSize() {
+	SIZE = Number(document.getElementById("size").value);
+	initialize();
 	return;
 }

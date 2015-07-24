@@ -2,109 +2,17 @@
  * styles.css
  *
  * Computer Science 50
- * Problem Set 7
+ * Final Project
  *
  * Global CSS.
  */
 
-.container
-{
-    /* center contents */
-    margin-left: auto;
-    margin-right: auto;
-    text-align: center;
+canvas {
+    /*padding-left: 0;*/
+    /*padding-right: 0;*/
+    /*margin-left: auto;*/
+    /*margin-right: auto;*/
+    /*display: block;*/
+    /*width: 800px;*/
+   border: 2px solid black;
 }
-
-#middle .form-control
-{
-    /* center form controls */
-    display: inline-block;
-
-    /* override Bootstrap's 100% width for form controls */
-    width: auto;
-}
-
-#bottom
-{
-    /* shrink bottom's font size */
-    font-size: smaller;
-
-    /* surround with whitespace */
-    margin: 20px;
-}
-
-#navlist ul 
-{
-    margin: 0;
-    padding: 0 0 1em 0;
-    list-style-type: none;
-}
-
-#navlist ul li
-{
-    display: inline;
-    font-weight: bold;
-}
-
-#navlist ul li a
-{
-    text-decoration: none;
-    padding: .2em 1em;
-    color: darkorange;
-    background-color: blue;
-}
-
-#navlist a:hover
-{
-    background-color: #8080FF;
-}
-
-table {
-    border: 3px solid black;
-    border-collapse: collapse;
-    width: 75%;
-    margin: auto;
-    padding: 10px;
-}
-
-th, td {
-    border: 1px solid black;
-    padding: 2px 5px;
-    color: black;
-}
-
-th {
-    text-align: center;
-    background-color: green;
-}
-
-td.name {
-    text-align: left;
-}
-
-td.number
-{
-    text-align: right;
-}
-
-td.price {
-    text-align: right;
-    color: red;
-    white-space: pre-wrap;
-}
-
-.odd
-{
-   background-color: #FFEFD5;
-}
-
-.even
-{
-    background-color: #FFDAB9;
-}
-
-.total
-{
-    background-color: gray;
-}
-
