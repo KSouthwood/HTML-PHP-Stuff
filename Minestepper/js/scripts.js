@@ -84,6 +84,7 @@ var FS0 = "unknown";
 var FS1 = "maybe";
 var FS2 = "definite";
 var FS3 = "cleared";
+var FS4 = "checking";
 
 /**
  *  Flags is Array of FlagState
@@ -371,6 +372,9 @@ function drawNumber(rc, character, color) {
 
 /**
  *  Event -> Natural
+ *  Returns a row and column based on the point clicked on the canvas.
+ * 
+ *  TODO - Need to refine formula as it keeps being off by 1 when near the right/bottom edge of a square
  */
 function getRowCol(event) {
 	var clicked = {
@@ -468,15 +472,28 @@ function gameWon() {
 	return;
 }
 
+/**
+ *  Object Object -> Object
+ *  Clear cells with minecount of zero and adjacent cells
+ * 
+ * TODO - Call clearZeros when finding a zero while clearing neighboring cells..
+ */
+
 function clearZeros(cell, dirs) {
 	console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - First call to clear zeros."); // TODO - Remove
 	// check if dirs is all true
 	if (dirs[0] && dirs[1] && dirs[2] && dirs[3]) {
 		return;
 	}
+
+	console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Setting status to checking."); // TODO - Remove
+	flags[cell.row][cell.col] = FS4;
 	
 	// set-up lookup table
-	var move = [{r: -1, c: 0, d: 2}, {r: 0, c: 1, d: 3}, {r: 1, c: 0, d: 0}, {r: 0, c: -1, d: 1}];
+	var move = [{r: -1, c: 0, d: 2},	// Above
+				{r: 0, c: 1, d: 3}, 	// Right
+				{r: 1, c: 0, d: 0}, 	// Below
+				{r: 0, c: -1, d: 1}];	// Left
 	
 	// begin checking each direction for another zero
 	for (var i=0; i < move.length; i++) {
@@ -491,12 +508,14 @@ function clearZeros(cell, dirs) {
 		var rc =	{row: cell.row + move[i].r,
 					col: cell.col + move[i].c};
 
-		console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Checking for 0 at {" + rc.row + "," + rc.col + "}"); // TODO - Remove		
-		if ((rc.row < 0) || (rc.row >= SIZE) || (rc.col < 0) || (rc.col >= SIZE) || (flags[rc.row][rc.col] == FS3)) {
+		// Make sure the cell to be checked is in-bounds and hasn't previously been cleared already
+		console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Checking for 0 at {" + rc.row + "," + rc.col + "}"); // TODO - Remove
+		if ((rc.row < 0) || (rc.row >= SIZE) || (rc.col < 0) || (rc.col >= SIZE) || (flags[rc.row][rc.col] == FS3) || (flags[rc.row][rc.col] == FS4)) {
 			console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Cell out of bounds or cleared."); // TODO - Remove
 			continue;
 		}
 		
+		// Found a zero count, so call the function again with the new cell coordinates
 		if (minecount[rc.row][rc.col] == 0) {
 			var j = [false, false, false, false];
 			j[move[i].d] = true;
@@ -507,7 +526,29 @@ function clearZeros(cell, dirs) {
 			clearZeros(rc, j);
 		}
 	};
-	console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - All directions tried. Returning."); // TODO - Remove
+
+	console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - All directions tried. Clearing cell neighbors."); // TODO - Remove
+	
+	// Finished checking all directions. Clear all neighbors (including diagonals).
+	for (var x = Math.max(0, cell.row - 1); x <= Math.min(cell.row + 1, SIZE-1); x++) {
+		for (var y = Math.max(0, cell.col - 1); y <= Math.min(cell.col + 1, SIZE-1); y++) {
+			if (x !== cell.row || y !== cell.col) {
+				console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Checking neighbor {" + x + "," + y + "}."); // TODO - Remove
+				if ((flags[x][y] == FS0) && (minecount[x][y] != 0)) {
+					console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Clearing neighbor {" + x + "," + y + "}."); // TODO - Remove
+					clear--;
+					clearRect({row: x, col: y});
+					flags[x][y] = FS3;
+					drawNumber({row: x, col: y}, minecount[x][y], colors[minecount[x][y]]);
+				}
+			}
+		}
+	}
+	
+	// All done. Set cell to cleared and return.
+	flags[cell.row][cell.col] = FS3;
+
+	console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Neighbors cleared. Returning."); // TODO - Remove
 return;
 }
 

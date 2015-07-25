@@ -50,29 +50,39 @@
 					<p class="panel-heading h1 text-center">
 						Settings
 					</p>
-					<p class="panel-body h4 text-center">
-						Difficulty
-					</p>
-					<div class="text-center">
-						<button type="button" id="easy" class="btn btn-default" onclick="changeDiff()">
-							Easy
-						</button>
-						<button type="button" id="stnd" class="btn btn-primary btn-default" onclick="changeDiff()">
-							Standard
-						</button>
-						<button type="button" id="diff" class="btn btn-default" onclick="changeDiff()">
-							Difficult
-						</button>
-					</div>
-					<p class="panel-body h4 text-center">
-						Minefield Size
-					</p>
-					<div class="input-group">
-						<input type="number" class="form-control" value="10" id="size">
-						<span class="input-group-btn">
-							<button class="btn btn-default" type="button" onclick="changeSize()">
-								Change
-							</button> </span>
+					<div class="row">
+						<div class="col-md-1"></div>
+						<div class="col-md-10">
+							<div class="panel panel-default">
+								<p class="panel-heading h4 text-center">
+									Difficulty
+								</p>
+								<div class="text-center">
+									<button type="button" id="easy" class="btn btn-default" onclick="changeDiff()">
+										Easy
+									</button>
+									<button type="button" id="stnd" class="btn btn-primary btn-default" onclick="changeDiff()">
+										Standard
+									</button>
+									<button type="button" id="diff" class="btn btn-default" onclick="changeDiff()">
+										Difficult
+									</button>
+								</div>
+							</div>
+							<div class="panel panel-default">
+								<p class="panel-heading h4 text-center">
+									Minefield Size
+								</p>
+								<div class="input-group">
+									<input type="number" class="form-control" value="10" id="size">
+									<span class="input-group-btn">
+										<button class="btn btn-default" type="button" onclick="changeSize()">
+											Change
+										</button> </span>
+								</div>
+							</div>
+						</div>
+						<div class="col-md-1"></div>
 					</div>
 				</div>
 			</div>
