@@ -4,27 +4,36 @@
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 		<title>Minestepper</title>
+		
+		<!-- Font links -->
+		<link href='http://fonts.googleapis.com/css?family=Sansita+One' rel='stylesheet' type='text/css'>
+		<link href='http://fonts.googleapis.com/css?family=Satisfy' rel='stylesheet' type='text/css'>
 
-		<link href="css/bootstrap-theme.css" rel="stylesheet"/>
-		<link href="css/bootstrap.css" rel="stylesheet"/>
+		<!-- CSS Stylesheet links -->
+		<link href="css/bootstrap-theme.min.css" rel="stylesheet"/>
+		<link href="css/bootstrap.min.css" rel="stylesheet"/>
 		<link href="css/styles.css" rel="stylesheet" />
 
-		<script src="js/jquery-1.10.2.js"></script>
-		<script src="js/bootstrap.js"></script>
+		<!-- JavaScripts links -->
+		<script src="js/jquery-1.10.2.min.js"></script>
+		<script src="js/bootstrap.min.js"></script>
 		<script src="js/scripts.js"></script>
 	</head>
 
 	<body onload="initialize()">
 		<div class="container-fluid">
-			<div class="col-md-12">
 				<div class="jumbotron">
-					<h1 class="text-center">Minestepper</h1>
-					<p class="text-center">
-						Can you clear the minefield without stepping on a mine? Click a square to clear it.
-						Hold CTRL to flag a square as a mine, possibly a mine, or unknown status.
-					</p>
+					<div class="row">
+					<div class="text-center title col-xs-12">Minestepper</div>
+					<div class="col-xs-1 col-md-3"></div>
+					<div class="text-center body col-xs-10 col-md-6">
+						<p>Can you clear the minefield without stepping on a mine? To clear a mine, just click on it. 
+						To mark a square as a mine, ctrl-click, and to mark a square as possibly a mine, shift-click. 
+						You win when all squares are cleared except the mines. Good luck and step safely.</p>
+					</div>
+					<div class="col-xs-1 col-md-3"></div>
+					</div>
 				</div>
-			</div>
 		</div>
 
 		<div class="row">
@@ -37,12 +46,13 @@
 					<p id="mines" class="panel-body h1 text-center">
 						0
 					</p>
-					<!-- TODO - add instructions on play?? -->
 				</div>
 			</div>
 
 			<div class="col-md-6 text-center">
 				<canvas id="gameboard"></canvas>
+				<p id="message1"></p>
+				<p id="message2"></p>
 			</div>
 
 			<div class="col-md-2">
@@ -69,17 +79,28 @@
 									</button>
 								</div>
 							</div>
+						</div>
+						<div class="col-md-1"></div>
+					</div>
+					<div class="row">
+						<div class="col-md-1"></div>
+						<div class="col-md-10">
 							<div class="panel panel-default">
 								<p class="panel-heading h4 text-center">
 									Minefield Size
 								</p>
-								<div class="input-group">
-									<input type="number" class="form-control" value="10" id="size">
-									<span class="input-group-btn">
-										<button class="btn btn-default" type="button" onclick="changeSize()">
-											Change
-										</button> </span>
+								<div class="text-center">
+									<button type="button" id="sml" class="btn btn-default btn-primary" onclick="changeSize()">
+										Small
+									</button>
+									<button type="button" id="med" class="btn btn-default" onclick="changeSize()">
+										Medium
+									</button>
+									<button type="button" id="lrg" class="btn btn-default" onclick="changeSize()">
+										Large
+									</button>
 								</div>
+								
 							</div>
 						</div>
 						<div class="col-md-1"></div>

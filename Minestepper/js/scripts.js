@@ -1,64 +1,74 @@
-/**
+/****************************************************************************
  * scripts.js
  *
  * Computer Science 50
  * Final Project
  *
- * Global JavaScript, if any.
- */
+ * Play the game of Minestepper (Minesweeper clone).
+ ****************************************************************************/
 
-/**
- * Play the game of Minestepper (Minesweeper clone)
- */
+/****************************************************************************
+ * 
+ *  Constants
+ *  =========
+ * 
+ ****************************************************************************/
 
-/**
- * Constants
- * =========
- */
-
-// size of boxes to draw on canvas in pixels
-var BOX_PXL = 25;
-// size of padding between boxes in pixels
-var PADDING = 2;
+var BOX_PXL = 25;	// size of boxes to draw on canvas in pixels
+var PADDING = 2;	// size of padding between boxes in pixels
 var OFFSET = BOX_PXL + PADDING;
 
-/**
- * Data Definitions
- * ================
- */
+/****************************************************************************
+ * 
+ *  Data Definitions
+ *  ================
+ * 
+ ****************************************************************************/
 
 /**
- * Size is Natural
- * interp. size of minefield
+ *	Size is Natural
+ *	interp. size of minefield
  */
 
-var SIZE = 10;
+// object for the grid size of the minefield
+var SIZES = {
+		sml: 10,
+		med: 15,
+		lrg: 20
+};
+
+// object to hold the current size for the game while in play
+var size = {
+		lvl: SIZES.sml,
+		lbl: "sml"
+};
 
 /**
- *  Mine is Boolean
- *  interp. true if it's an active mine
+ *	Mine is Boolean
+ *	interp. true if it's an active mine
  */
 
-// active mine
-var MA = true;
-// inactive mine
-var MI = false;
+var MINE = {
+		armed: true,	// active mine
+		unarm: false	// inactive mine
+};
 
 /**
  * Minefield is Array of Mine
  * interp. array to hold grid of mine locations
  */
 
-var MF1 = [[MA, MI], [MI, MA]];
-var minefield;
+var MF1 = [[MINE.armed, MINE.unarm], 
+           [MINE.unarm, MINE.armed]];
 
 /**
  * Minecount is Array of Natural
- * interp. array to hold count of mines around a given Minefield cell
+ * interp. array to hold count of mines around a given minefield cell
  */
 
-var MC1 = [[0, 2], [0, 1]];
-var minecount;
+var MC1 = [[0, 2], 
+           [0, 1]];
+
 /**
  * Score is Natural
  * interp. count of mines found
@@ -73,29 +83,40 @@ var SC2 = 10;
  *  interp. list of colors to use for displaying number of mines
  */
 
-var colors = ['cyan', 'lightskyblue', 'deepskyblue', 'blue', 'darkblue', 'forestgreen', 'darkgreen', 'orangered', 'red'];
+var colors = ['cyan',
+              'lightskyblue',
+              'deepskyblue',
+              'blue',
+              'darkblue',
+              'forestgreen',
+              'darkgreen',
+              'orangered',
+              'red'];
 
 /**
  *  FlagState is Enumeration
  *  interp. players status of what's in a square
  */
 
-var FS0 = "unknown";
-var FS1 = "maybe";
-var FS2 = "definite";
-var FS3 = "cleared";
-var FS4 = "checking";
+var FLAG = {
+		unk: "unknown",
+		may: "maybe",
+		def: "definite",
+		clr: "cleared",
+		chk: "checking"
+};
 
 /**
  *  Flags is Array of FlagState
  *  array to hold the players status of what's in a square
  */
-var F1 = [[FS0, FS1], [FS2, FS3]];
-var flags;
+var F1 = [[FLAG.unk, FLAG.may], 
+          [FLAG.def, FLAG.clr]];
 
 /**
- * GameOver is Boolean
- * interp. boolean flag to indicate if the game is over (either found all the mines or stepped on one)
+ *  GameOver is Boolean
+ *  interp. boolean flag to indicate if the game is over
+ *  (either found all the mines or stepped on one)
  */
 var GO_T = true;
 var GO_F = false;
@@ -106,19 +127,26 @@ var game = GO_F;
  *  Difficulty is Number
  *  interp. percentage of cells to fill with mines
  */
-var EASY = 0.1; // 10%
-var STND = 0.2; // 20%
-var DIFF = 0.3; // 30%
+var DIFF = {
+		easy: 0.1, 
+		stnd: 0.2, 
+		diff: 0.3
+}; // 10%, 20% 30% respectively
 
-var difficulty = STND; // set inital difficulty to standard
+var difficulty = {
+	lvl : DIFF.stnd,
+	lbl : "stnd"
+}; // set initial difficulty to standard
 
-/**
+/****************************************************************************
+ * 
  *  Function Definitions
  *  ====================
- */
+ * 
+ ****************************************************************************/
 
 /**
- *  Initialize variables and minefield
+ *  Initialize variables and arrays
  *  
  */
 function initialize() {
@@ -128,20 +156,25 @@ function initialize() {
 	
 	resizeCanvas(); // sets size of canvas
 	
-	// set up arrays for game play
-	drawInitMinefield(ctx, SIZE);
-	minefield = populateMinefield();
-	minecount = countMines(minefield);
-	flags = initArray(SIZE, FS0);
-	
-	mines = Math.floor((SIZE * SIZE) * difficulty);
-	clear = (SIZE * SIZE) - mines;
+	// 
+	mines = Math.floor((size.lvl * size.lvl) * difficulty.lvl);
+	clear = (size.lvl * size.lvl) - mines;
 	updateMines(mines);
+	
+	// set up arrays for game play
+	drawInitMinefield();
+	minefield = populateMinefield(mines);
+	minecount = countMines(minefield);
+	flags = initArray(size.lvl, FLAG.unk);
+	
+	document.getElementById("message1").innerHTML = "";
+	document.getElementById("message2").innerHTML = "";
 }
 
 /**
- *  Event
- *  handles mouse click and calls appropriate function based on state of ctrl key
+ *  Event -> NULL
+ *  handles mouse click and calls appropriate function based on 
+ *  state of ctrl key
  * 
  */
 
@@ -152,37 +185,98 @@ function handleClick(event) {
 		return;
 	}
 	
-	if (event.ctrlKey) {
-		changeState(event);
-	} else {
-		reveal(event);
-	}
-}
-/**
- *  Event -> Image
- *  handles double click on the canvas - reveals whats behind the square
- * !!! - not working - col keeps being off by 1
- */
-
-function reveal(event) {
+	var key = (event.altKey * 4) + (event.shiftKey * 2) + (event.ctrlKey * 1);
 	var rc = getRowCol(event);
 
+	switch (key) {
+	case 0:
+		reveal(rc);
+		break;
+	case 1:
+		stateToDef(rc);
+		break;
+	case 2:
+		stateToMay(rc);
+		break;
+	default:
+		}
+}
+
+/**
+ * 	Object -> Image
+ *  toggles the square from blank to mine and back
+ */
+
+function stateToDef(rc) {
+	drawRect('gray', rc);
+	
+	switch (flags[rc.row][rc.col]) {
+	case FLAG.unk:
+	case FLAG.may:
+		flags[rc.row][rc.col] = FLAG.def;
+		drawMine(rc);
+		mines--;
+		break;
+	case FLAG.def:
+		flags[rc.row][rc.col] = FLAG.unk;
+		mines++;
+		break;
+	default:
+	}
+	
+	updateMines(mines);
+}
+
+/**
+ * 	Object -> Image
+ *  toggles the square from blank to mine and back
+ */
+
+function stateToMay(rc) {
+	drawRect('gray', rc);
+	
+	switch (flags[rc.row][rc.col]) {
+	case FLAG.def:
+		flags[rc.row][rc.col] = FLAG.may;
+		mines++;
+		updateMines(mines);
+		break;
+	case FLAG.unk:
+		flags[rc.row][rc.col] = FLAG.may;
+		drawNumber(rc, "?", 'black');
+		break;
+	case FLAG.may:
+		flags[rc.row][rc.col] = FLAG.unk;
+		break;
+	default:
+	}
+	
+}
+
+/**
+ *	Object -> Image
+ *	handles ctrl-click on the canvas - reveals what's behind the square
+ * 
+ */
+
+function reveal(rc) {
+
 	// return if we've already revealed this cell
-	if (flags[rc.row][rc.col] == FS3) {
+	if (flags[rc.row][rc.col] == FLAG.clr) {
 		return;
 	}
 	
 	// clear the cell and set it's state to cleared
 	clearRect(rc);
-	flags[rc.row][rc.col] = FS3;
+	flags[rc.row][rc.col] = FLAG.clr;
 	
-	// 
+	// check if there is a mine...
 	if (minefield[rc.row][rc.col]) {
-		game = GO_T;
+		game = GO_T;	// ...game is over if there is...
 		drawMine(rc);
 		gameOver();
 	} else {
-		safeStep(rc);
+		safeStep(rc);	// ...otherwise we continue on.
 		clear--;
 		if (clear == 0) {
 			game = GO_T;
@@ -192,107 +286,37 @@ function reveal(event) {
 }
 
 /**
- * 	Event -> Image
- *  changes the square status from blank to question mark and back
- */
-
-function changeState(event) {
-	var rc = getRowCol(event);
-
-	// use switch/case statement??
-	switch (flags[rc.row][rc.col]) {
-	// if current status is unknown, chanage to definite and display mine on top of square
-	case FS0:
-		flags[rc.row][rc.col] = FS2;
-		drawRect('gray', rc);
-		drawMine(rc);
-		mines--;
-		updateMines(mines);
-		break;
-	// if current status is maybe, change to unknown and redraw blank square
-	case FS1:
-		flags[rc.row][rc.col] = FS0;
-		drawRect('gray', rc);
-		break;
-	// if current status is definite, change to maybe and display question mark on top of square
-	case FS2:
-		flags[rc.row][rc.col] = FS1;
-		drawRect('gray', rc);
-		drawNumber(rc, "?", 'black');
-		mines++;
-		updateMines(mines);
-		break;
-	// if current status is cleared, do nothing
-	case FS3:
-	default:
-		break;
-	}
-}
-
-/**
- *  Canvas -> Canvas
- *  calculates the size of the canvas for the minefield
- *
- */
-function resizeCanvas() {
-	canvas.width = (SIZE * BOX_PXL) + ((SIZE + 1) * PADDING);
-	canvas.height = canvas.width;
-	
-	// fill background of canvas for gridlines
-	ctx.fillStyle = "lightgray";
-	ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-}
-
-/**
- *  Canvas Natural -> Image
- *  draws the boxes on the minefield
- */
-
-function drawInitMinefield(size) {
-	var rc = {"row": 0, "col": 0};
-	for (rc.row = 0; rc.row < SIZE; rc.row++) {
-		for (rc.col = 0; rc.col < SIZE; rc.col++) {
-			drawRect('gray', rc);
-		};
-	};
-}
-
-/**
  *  Natural Number/String/Boolean -> Array
  *  defines an array and fills it with a supplied value
  *
  */
-function initArray(size, fill) {
-	var x = new Array(size);
-	for (var i = 0; i < size; i++) {
-		x[i] = new Array(size);
-		for ( j = 0; j < size; j++) {
-			// set array to all inactive mines (false)
-			x[i][j] = fill;
+function initArray(dimension, fill) {
+	var arr = new Array(dimension);
+	for (var x = 0; x < dimension; x++) {
+		arr[x] = new Array(dimension);
+		for (var y = 0; y < dimension; y++) {
+			arr[x][y] = fill;
 		}
 	}
-	return x;
+	return arr;
 }
 
 /**
- *  Array -> Array
- *  place mines randomly on the minefield
+ *  Natural -> Array
+ *  place some mines randomly on the minefield
  *
  */
-function populateMinefield() {
-	// create minefield
-	var mf = initArray(SIZE, MI);
+function populateMinefield(numMines) {
+
+	var mf = initArray(size.lvl, MINE.unarm);
 		
-	// do mines in 20% of the minefield
-	var mines = Math.floor((SIZE * SIZE) * difficulty);
-	while (mines > 0) {
-		var placeMine = Math.floor(Math.random() * (SIZE * SIZE));
-		var row = Math.floor(placeMine / SIZE);
-		var col = placeMine % SIZE;
-		if (mf[row][col] == MI) {
-			mf[row][col] = MA;
-			mines--;
+	while (numMines > 0) {
+		var placeMine = Math.floor(Math.random() * (size.lvl * size.lvl));
+		var row = Math.floor(placeMine / size.lvl);
+		var col = placeMine % size.lvl;
+		if (mf[row][col] == MINE.unarm) {
+			mf[row][col] = MINE.armed;
+			numMines--;
 		}
 	}
 	
@@ -303,20 +327,22 @@ function populateMinefield() {
  *  Array -> Array
  *  iterate through minefield and count up mines around each cell
  */
-function countMines(minefield) {
+function countMines(mf) {
 	// create array for mine count
-	var mc = initArray(SIZE, 0);
-	var xlim = SIZE - 1;
-	var ylim = SIZE - 1;
+	var mc = initArray(size.lvl, 0);
+	var xlim = size.lvl - 1;
+	var ylim = size.lvl - 1;
 
-	//
-	for (var row = 0; row < SIZE; row++) {
-		for (var col = 0; col < SIZE; col++) {
+	// outer loops iterate through the array col by col, row by row
+	for (var row = 0; row < size.lvl; row++) {
+		for (var col = 0; col < size.lvl; col++) {
+			
 			// check all neighbors of minefield[row][col]
 			for (var x = Math.max(0, row - 1); x <= Math.min(row + 1, xlim); x++) {
 				for (var y = Math.max(0, col - 1); y <= Math.min(col + 1, ylim); y++) {
+					
 					if (x !== row || y !== col) {
-						if (minefield[x][y]) {
+						if (mf[x][y]) {
 							mc[row][col]++;
 						}
 					}
@@ -329,7 +355,7 @@ function countMines(minefield) {
 }
 
 /**
- *  Canvas String Natual Natural -> Image
+ *  String Object -> Image
  *  adds a rectangle to the canvas
  */
 
@@ -339,7 +365,7 @@ function drawRect(color, rc) {
 }
 
 /**
- *  Canvas String Natual Natural -> Image
+ *  Object -> Image
  *  adds a rectangle to the canvas
  */
 
@@ -348,7 +374,7 @@ function clearRect(rc) {
 }
 
 /**
- * Canvas Natural Natural -> Image
+ * Object -> Image
  * draws the image of the mine onto the canvas at the given row and column
  *
  */
@@ -357,8 +383,8 @@ function drawMine(rc) {
 }
 
 /**
- *  Context Natural Natural -> Image
- *  draws the number of mines around a box as an image
+ *  Object String String -> Image
+ *  draws character in a color at the given row and column
  *
  */
 
@@ -374,26 +400,14 @@ function drawNumber(rc, character, color) {
  *  Event -> Natural
  *  Returns a row and column based on the point clicked on the canvas.
  * 
- *  TODO - Need to refine formula as it keeps being off by 1 when near the right/bottom edge of a square
  */
 function getRowCol(event) {
-	var clicked = {
-		row : 0,
-		col : 0
-	};
-
-	// subtracting 15 to accomodate row margin and border
-	// var xx = (event.x - canvas.offsetParent.offsetLeft - 15);
-	// var yy = (event.y - canvas.offsetParent.offsetTop);
 	var rect = canvas.getBoundingClientRect();
-	var xx = event.clientX - rect.left;
-	var yy = event.clientY - rect.top;
-	// convert (x,y) into (row,col) of square that was clicked
-	clicked.row = Math.floor(yy / OFFSET);
-	clicked.col = Math.floor(xx / OFFSET);
-
-	// TODO - remove when complete - just for debugging purposes
-	console.log('Clicked: {', event.x, ',', event.y, '} Canvas point: {', xx, ',', yy, '} Gameboard {', clicked.row, ',', clicked.col, '}');
+	
+	var clicked = {
+		row : Math.floor(Math.max((event.clientY - rect.top - 3),0) / OFFSET),
+		col : Math.floor(Math.max((event.clientX - rect.left - 3),0) / OFFSET)
+	};
 
 	return clicked;
 }
@@ -404,71 +418,89 @@ function getRowCol(event) {
  */
 
 function rctop(n) {
-	return (PADDING + (n * BOX_PXL) + (n * PADDING));
+	return (PADDING + (n * OFFSET));
 }
 
 /**
- *  Context Natural Natural -> ??
- *  safe step (found no mine), now we reveal how many mines are around us
+ *  Object -> Image
+ *  Found no mine, either print a number or clear cells.
  */
 
 function safeStep(rc) {
-	// one or more mines as a neighbor, so just print how many and return
 	if (minecount[rc.row][rc.col] > 0) {
 		drawNumber(rc, minecount[rc.row][rc.col], colors[minecount[rc.row][rc.col]]);
-		return;
+	} else {
+		clearZeros(rc, [false, false, false, false]);
 	}
-
-	// no mines as a neighbor, so check if any other neighbors have zero as well and clear those cells
-	// TODO - remove (just added in so routine will work for now...)
-	console.log("{" + rc.row + "," + rc.col + "} [false, false, false, false] - Initial call to clearZeros.");
-	clearZeros(rc, [false, false, false, false]);
+	
 	return;
 }
 
 /**
- *  Canvas Context -> String
- *  displays game over message
- * @param {Object} canvas
- * @param {Object} context
+ *  NULL -> String
+ *  player stepped on a mine. Show the mine locations and display a message.
+ * 
  */
 
 function gameOver() {
+
+	// highlights all the still hidden mines
+	var rc = {row: 0, col: 0};
+	for (rc.row = 0; rc.row < size.lvl; rc.row++) {
+		for (rc.col = 0; rc.col < size.lvl; rc.col++) {
+			if ((flags[rc.row][rc.col] != FLAG.clr) && (minefield[rc.row][rc.col] == MINE.armed)) {
+				drawRect('red', rc);
+				drawMine(rc);
+			}
+		}
+	}
 	
-	// display game over message on canvas
-	ctx.fillStyle = 'red';
-	ctx.font = 'bold 40px san-serif';
-	ctx.textAlign = 'center';
-	ctx.textBaseline = 'middle';
-	ctx.fillText("Game Over!!", (canvas.width / 2), (canvas.height / 2));
-	
-	ctx.fillStyle = 'black';
-	ctx.font = '12px serif';
-	ctx.fillText("(Click to play again.)", (canvas.width / 2), (canvas.height - 20));
+	var m1 = document.getElementById("message1");
+	m1.innerHTML = "Game Over!!";
+	m1.style.fontSize = "40px";
+	m1.style.fontWeight = "bold";
+	m1.style.fontFamily = "Sansita One";
+	m1.style.color = "red";
+	var m2 = document.getElementById("message2");
+	m2.innerHTML = "(Click to play again.)";
+	m2.style.fontSize = "16px";
+	m2.style.fontFamily = "Satisfy";
+	m2.style.color = "black";
 	
 	return;
 }
 
 /**
- *  Canvas Context -> String
- *  displays game over message
- * @param {Object} canvas
- * @param {Object} context
+ *  NULL -> String
+ *  Player cleared all the mines. Congratulate them.
+ * 
  */
 
 function gameWon() {
+		
+	// highlights all the still hidden mines
+	var rc = {row: 0, col: 0};
+	for (rc.row = 0; rc.row < size.lvl; rc.row++) {
+		for (rc.col = 0; rc.col < size.lvl; rc.col++) {
+			if ((flags[rc.row][rc.col] != FLAG.clr) && (minefield[rc.row][rc.col] == MINE.armed)) {
+				drawRect('dodgerblue', rc);
+				drawMine(rc);
+			}
+		}
+	}
+	var m1 = document.getElementById("message1");
+	m1.innerHTML = "You won!!";
+	m1.style.fontSize = "40px";
+	m1.style.fontWeight = "bold";
+	m1.style.fontFamily = "Sansita One";
+	m1.style.color = "blue";
 	
-	// display game over message on canvas
-	ctx.fillStyle = 'blue';
-	ctx.font = 'bold 40px san-serif';
-	ctx.textAlign = 'center';
-	ctx.textBaseline = 'middle';
-	ctx.fillText("You won!!", (canvas.width / 2), (canvas.height / 2));
-	
-	ctx.fillStyle = 'black';
-	ctx.font = '12px serif';
-	ctx.fillText("(Click to play again.)", (canvas.width / 2), (canvas.height - 20));
-	
+	var m2 = document.getElementById("message2");
+	m2.innerHTML = "(Click to play again.)";
+	m2.style.fontSize = "16px";
+	m2.style.fontFamily = "Satisfy";
+	m2.style.color = "black";
+
 	return;
 }
 
@@ -476,80 +508,128 @@ function gameWon() {
  *  Object Object -> Object
  *  Clear cells with minecount of zero and adjacent cells
  * 
- * TODO - Call clearZeros when finding a zero while clearing neighboring cells..
  */
 
 function clearZeros(cell, dirs) {
-	console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - First call to clear zeros."); // TODO - Remove
 	// check if dirs is all true
 	if (dirs[0] && dirs[1] && dirs[2] && dirs[3]) {
 		return;
 	}
 
-	console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Setting status to checking."); // TODO - Remove
-	flags[cell.row][cell.col] = FS4;
-	
+	flags[cell.row][cell.col] = FLAG.chk; // set cell status to checking
+
 	// set-up lookup table
-	var move = [{r: -1, c: 0, d: 2},	// Above
-				{r: 0, c: 1, d: 3}, 	// Right
-				{r: 1, c: 0, d: 0}, 	// Below
-				{r: 0, c: -1, d: 1}];	// Left
-	
+	var move = [ {
+		r : -1,
+		c : 0,
+		d : 2
+	}, // Above
+	{
+		r : 0,
+		c : 1,
+		d : 3
+	}, // Right
+	{
+		r : 1,
+		c : 0,
+		d : 0
+	}, // Below
+	{
+		r : 0,
+		c : -1,
+		d : 1
+	} ]; // Left
+
 	// begin checking each direction for another zero
-	for (var i=0; i < move.length; i++) {
-		console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Trying direction " + i); // TODO - Remove
+	for (var i = 0; i < move.length; i++) {
 		if (dirs[i]) {
-			console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Direction has been tried."); // TODO - Remove
 			continue;
 		}
-		
+
 		dirs[i] = true;
 
-		var rc =	{row: cell.row + move[i].r,
-					col: cell.col + move[i].c};
+		var rc = {
+			row : cell.row + move[i].r,
+			col : cell.col + move[i].c
+		};
 
-		// Make sure the cell to be checked is in-bounds and hasn't previously been cleared already
-		console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Checking for 0 at {" + rc.row + "," + rc.col + "}"); // TODO - Remove
-		if ((rc.row < 0) || (rc.row >= SIZE) || (rc.col < 0) || (rc.col >= SIZE) || (flags[rc.row][rc.col] == FS3) || (flags[rc.row][rc.col] == FS4)) {
-			console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Cell out of bounds or cleared."); // TODO - Remove
+		// Make sure the cell to be checked is in-bounds and hasn't previously
+		// been cleared already
+		if ((rc.row < 0) || (rc.row >= size.lvl) || (rc.col < 0)
+				|| (rc.col >= size.lvl) || (flags[rc.row][rc.col] == FLAG.clr)
+				|| (flags[rc.row][rc.col] == FLAG.chk)) {
 			continue;
 		}
-		
-		// Found a zero count, so call the function again with the new cell coordinates
+
+		// Found a zero count, so call the function again with the new cell
+		// coordinates
 		if (minecount[rc.row][rc.col] == 0) {
-			var j = [false, false, false, false];
+			var j = [ false, false, false, false ];
 			j[move[i].d] = true;
 			clearRect(rc);
-			flags[rc.row][rc.col] = FS3;
+			flags[rc.row][rc.col] = FLAG.clr;
 			clear--;
-			console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " Zero found. Calling new clearZeros with: {" + rc.row + "," + rc.col + "} " + JSON.stringify(j)); // TODO - remove
 			clearZeros(rc, j);
 		}
-	};
+	}
+	;
 
-	console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - All directions tried. Clearing cell neighbors."); // TODO - Remove
-	
-	// Finished checking all directions. Clear all neighbors (including diagonals).
-	for (var x = Math.max(0, cell.row - 1); x <= Math.min(cell.row + 1, SIZE-1); x++) {
-		for (var y = Math.max(0, cell.col - 1); y <= Math.min(cell.col + 1, SIZE-1); y++) {
+	// Finished checking all directions. Clear all neighbors (including
+	// diagonals).
+	for (var x = Math.max(0, cell.row - 1); x <= Math.min(cell.row + 1,
+			size.lvl - 1); x++) {
+		for (var y = Math.max(0, cell.col - 1); y <= Math.min(cell.col + 1,
+				size.lvl - 1); y++) {
 			if (x !== cell.row || y !== cell.col) {
-				console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Checking neighbor {" + x + "," + y + "}."); // TODO - Remove
-				if ((flags[x][y] == FS0) && (minecount[x][y] != 0)) {
-					console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Clearing neighbor {" + x + "," + y + "}."); // TODO - Remove
-					clear--;
-					clearRect({row: x, col: y});
-					flags[x][y] = FS3;
-					drawNumber({row: x, col: y}, minecount[x][y], colors[minecount[x][y]]);
+				if (flags[x][y] == FLAG.unk) {
+					if (minecount[x][y] != 0) {
+						clear--;
+						clearRect({row : x, col : y});
+						flags[x][y] = FLAG.clr;
+						drawNumber({row : x, col : y}, minecount[x][y], colors[minecount[x][y]]);
+					} else {
+						clearRect({row : x, col : y});
+						flags[x][y] = FLAG.clr;
+						clear--;
+						clearZeros({row : x, col : y}, [ false, false, false, false ]);
+					}
 				}
 			}
 		}
 	}
-	
-	// All done. Set cell to cleared and return.
-	flags[cell.row][cell.col] = FS3;
 
-	console.log("{" + cell.row + "," + cell.col + "} " + JSON.stringify(dirs) + " - Neighbors cleared. Returning."); // TODO - Remove
-return;
+	flags[cell.row][cell.col] = FLAG.clr; // All done. Set cell to cleared and return.
+
+	return;
+}
+
+/**
+ *	Canvas -> Canvas
+ *	calculates the size of the canvas for the minefield
+ * 
+ */
+
+function resizeCanvas() {
+	canvas.width = (size.lvl * OFFSET) +  PADDING;
+	canvas.height = canvas.width;
+	
+	// fill background of canvas for gridlines
+	ctx.fillStyle = "lightgray";
+	ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+/**
+ *  Canvas Natural -> Image
+ *  draws the boxes on the minefield
+ */
+
+function drawInitMinefield() {
+	var rc = {"row": 0, "col": 0};
+	for (rc.row = 0; rc.row < size.lvl; rc.row++) {
+		for (rc.col = 0; rc.col < size.lvl; rc.col++) {
+			drawRect('gray', rc);
+		};
+	};
 }
 
 /**
@@ -558,39 +638,34 @@ return;
  */
 
 function updateMines(sc) {
-	var elem = document.getElementById("mines");
-	elem.innerHTML = sc;
+	document.getElementById("mines").innerHTML = sc;
 	return;
 }
 
+/**
+ *  Event -> Image
+ *  Toggle the button for the difficulty level, updates the difficulty setting
+ *  and re-starts the game
+ */
 function changeDiff() {
-	switch (event.target.id) {
-		case "easy":
-			document.getElementById("easy").classList.toggle("btn-primary", true);
-			document.getElementById("stnd").classList.toggle("btn-primary", false);
-			document.getElementById("diff").classList.toggle("btn-primary", false);
-			difficulty = EASY;
-			initialize();
-			break;
-		case "stnd":
-			document.getElementById("easy").classList.toggle("btn-primary", false);
-			document.getElementById("stnd").classList.toggle("btn-primary", true);
-			document.getElementById("diff").classList.toggle("btn-primary", false);
-			difficulty = STND;
-			initialize();
-			break;
-		case "diff":
-			document.getElementById("easy").classList.toggle("btn-primary", false);
-			document.getElementById("stnd").classList.toggle("btn-primary", false);
-			document.getElementById("diff").classList.toggle("btn-primary", true);
-			difficulty = DIFF;
-			initialize();
-			break;
-	}
+	document.getElementById(difficulty.lbl).classList.toggle("btn-primary", false);
+	document.getElementById(event.target.id).classList.toggle("btn-primary", true);
+	difficulty.lbl = event.target.id;
+	difficulty.lvl = DIFF[event.target.id];
+	initialize();
+	return;
 }
 
+/**
+ *  Event -> Image
+ *  Toggle the button for the size setting, updates the size setting
+ *  and re-starts the game
+ */
 function changeSize() {
-	SIZE = Number(document.getElementById("size").value);
+	document.getElementById(size.lbl).classList.toggle("btn-primary", false);
+	document.getElementById(event.target.id).classList.toggle("btn-primary", true);
+	size.lvl = SIZES[event.target.id];
+	size.lbl = event.target.id;
 	initialize();
 	return;
 }
