@@ -9,6 +9,17 @@
 
 /****************************************************************************
  * 
+ *  To Do List
+ *  ==========
+ * 
+ ****************************************************************************/
+
+// TODO - Display a message on each cleared square (dependent on mine count)
+// TODO - Move grid size/difficulty buttons to a nav bar
+// TODO - Devise a scoring system to award points?
+
+/****************************************************************************
+ * 
  *  Constants
  *  =========
  * 
